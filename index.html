@@ -244,7 +244,7 @@ window.addEventListener('hashchange',go);
 /* Telegram Mini App */
 const T0=Date.now();
 const tg=window.Telegram&&window.Telegram.WebApp;
-const inTg=!!(tg&&tg.initData);
+const inTg=!!(tg&&typeof tg.sendData==='function');
 const total=()=>Object.values(S).reduce((a,s)=>a+s.n,0);
 function payload(){const g={};for(const k in S)g[k]=[S[k].ok,S[k].n];return JSON.stringify({v:1,g,t:Math.round((Date.now()-T0)/1000)})}
 function doSend(){
