@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uzunlik o‘yinlari</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: o‘ynoqi, lekin aniq — dars xonasidagi musobaqa
+   IDEA: sariq ruletka (tasma o‘lchagich) korpusi ichidagi o‘yinlar
+   PICTURE: tepada santimetr shkalasi, markazda o‘yin maydoni
+   COLOUR and TYPE: ruletka sarig‘i, qora siyoh, qizil belgilar; Rubik 800 + Rubik
+   LAYOUT: sarlavha, o‘yin tanlash qatori, katta o‘yin kartasi, hisob paneli */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6c915,#1b1a14);--card:light-dark(#fffdf5,#26241b);--ink:light-dark(#16140d,#f7f1dc);
+--soft:light-dark(#5b5640,#bdb59a);--line:light-dark(#16140d,#f7f1dc);--red:light-dark(#d42a1e,#ff6a5c);
+--ok:light-dark(#1f7a3a,#5fd38a);--chip:light-dark(#f3ecd2,#34311f);--yellow:#f6c915}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:960px;margin:0 auto;padding:clamp(20px,4vw,48px) max(4vw,16px) 48px}
+h1{font-size:clamp(32px,5vw,48px);line-height:1.05;margin:0 0 6px;font-weight:800;text-wrap:balance}
+.sub{margin:0 0 20px;color:var(--soft);max-width:60ch}
+.ruler{height:44px;background:var(--yellow);border:2px solid #16140d;border-bottom:0;border-radius:14px 14px 0 0;overflow:hidden}
+.ruler svg{display:block;width:100%;height:100%}
+.case{background:var(--card);border:2px solid var(--line);border-radius:0 0 14px 14px;padding:clamp(16px,3vw,32px);box-shadow:0 10px 0 rgba(0,0,0,.18)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.tabs button{font:500 15px Rubik,sans-serif;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--card)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline;margin-bottom:8px}
+.top h2{margin:0;font-size:22px}
+.meter{display:flex;gap:14px;color:var(--soft);font-size:15px;white-space:nowrap}
+.meter b{color:var(--ink)}
+.q{font-size:clamp(26px,5vw,40px);font-weight:800;line-height:1.15;margin:18px 0}
+.q .u{color:var(--red)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input[type=number]{font:700 22px Rubik,sans-serif;width:9ch;min-height:52px;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.unit{font-size:22px;font-weight:700;color:var(--red)}
+.btn{font:700 16px Rubik,sans-serif;min-height:48px;padding:0 20px;border-radius:10px;border:2px solid var(--line);background:var(--yellow);color:#16140d;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.cmp{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;margin:18px 0}
+.cmp .v{font-size:clamp(22px,4vw,34px);font-weight:800;text-align:center;padding:16px 8px;border:2px dashed var(--soft);border-radius:12px}
+.cmp .mid{display:flex;flex-direction:column;gap:8px}
+.cmp .mid .btn{width:64px;font-size:24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:18px 0}
+.card{font:800 20px Rubik,sans-serif;min-height:72px;border:2px solid var(--line);border-radius:12px;background:var(--chip);color:var(--ink);cursor:pointer;position:relative}
+.card[disabled]{background:var(--ink);color:var(--card);cursor:default}
+.card .n{position:absolute;top:4px;left:8px;font-size:13px;font-weight:500}
+.shake{animation:sh .35s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fig{position:relative;height:190px;margin:10px 0;touch-action:manipulation}
+.fig svg{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.msg{min-height:28px;font-weight:500;margin:10px 0}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--red)}
+.score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:22px}
+.score div{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.score span{display:block;font-size:13px;color:var(--soft)}
+.score b{font-size:24px}
+.hint{font-size:14px;color:var(--soft);margin:6px 0 0}
+.foot{margin-top:22px;font-size:14px;color:light-dark(#3d3820,#bdb59a)}
+.tgbar{margin-top:18px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.tgbar p{margin:0;font-weight:500}
+.tgbar[hidden]{display:none}
+@media(max-width:600px){.score{grid-template-columns:repeat(2,minmax(0,1fr))}.cmp{grid-template-columns:minmax(0,1fr)}.cmp .mid{flex-direction:row;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.shake{animation:none}.btn:active{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Uzunlik o‘yinlari</h1>
+<p class="sub">Uzunlik birliklarini almashtirish, taqqoslash va kesmani teng bo‘laklarga bo‘lish bo‘yicha to‘rtta mini o‘yin. Ballar har bir o‘yin uchun alohida hisoblanadi.</p>
+<div class="ruler" aria-hidden="true"><svg id="ruler" preserveAspectRatio="none"></svg></div>
+<div class="case">
+<div class="tabs" role="tablist">
+<button role="tab" id="t-almashtir" data-g="almashtir">Almashtir</button>
+<button role="tab" id="t-taqqosla" data-g="taqqosla">Taqqosla</button>
+<button role="tab" id="t-zinapoya" data-g="zinapoya">Zinapoya</button>
+<button role="tab" id="t-bol" data-g="bol">Teng bo‘l</button>
+</div>
+<div id="game"></div>
+</div>
+<div class="score" id="score"></div>
+<div class="tgbar" id="tgbar">
+<p id="tgtext">O‘ynab bo‘lgach, natijangizni o‘qituvchiga yuboring.</p>
+<button class="btn" id="send" type="button">Natijani o‘qituvchiga yuborish</button>
+</div>
+<p class="foot" id="foot">Savollar har safar tasodifiy tuziladi.</p>
+</div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=R(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+const NAMES={almashtir:'Almashtir',taqqosla:'Taqqosla',zinapoya:'Zinapoya',bol:'Teng bo‘l'};
+let best={};try{best=JSON.parse(localStorage.getItem('uz-best')||'{}')}catch(e){best={}}
+const S={almashtir:{ok:0,n:0,streak:0},taqqosla:{ok:0,n:0,streak:0},zinapoya:{ok:0,n:0,streak:0},bol:{ok:0,n:0,streak:0}};
+function saveBest(g,v){if(!best[g]||v>best[g]){best[g]=v;try{localStorage.setItem('uz-best',JSON.stringify(best))}catch(e){}}}
+function drawScore(){$('#score').innerHTML=Object.keys(S).map(g=>`<div><span>${NAMES[g]}</span><b>${S[g].ok}/${S[g].n}</b><span>eng uzun seriya: ${best[g]||0}</span></div>`).join('')}
+function hit(g,ok){const s=S[g];s.n++;if(ok){s.ok++;s.streak++;saveBest(g,s.streak)}else s.streak=0;drawScore()}
+function head(g,title){const s=S[g];return `<div class="top"><h2>${title}</h2><div class="meter"><span>To‘g‘ri: <b>${s.ok}</b></span><span>Seriya: <b>${s.streak}</b></span></div></div>`}
+
+/* ruler */
+const rs=$('#ruler');
+function drawRuler(){const W=rs.clientWidth||800,H=44;let h='';const step=W<520?8:10;for(let x=0,i=0;x<W;x+=step,i++){const big=i%10===0,mid=i%5===0;h+=`<line x1="${x}" x2="${x}" y1="0" y2="${big?26:mid?18:10}" stroke="#16140d" stroke-width="${big?2:1}"/>`;if(big&&i>0)h+=`<text x="${x+3}" y="38" font-size="12" font-family="Rubik" font-weight="700" fill="${i%20===0?'#d42a1e':'#16140d'}">${i/10}</text>`}rs.setAttribute('viewBox',`0 0 ${W} ${H}`);rs.innerHTML=h}
+const ro=new ResizeObserver(drawRuler);ro.observe(rs);
+
+/* units in mm */
+const U={mm:1,sm:10,dm:100,m:1000,km:1000000};
+const PAIRS=[['sm','mm'],['dm','sm'],['m','dm'],['m','sm'],['km','m'],['dm','mm'],['m','mm']];
+
+/* 1. Almashtir */
+let cur=null;
+function newConvert(){
+  const [B,s]=pick(PAIRS),r=U[B]/U[s];
+  const a=R(1,9);let b=r>=1000?R(1,99)*(pick([1,5,10])):R(0,r-1);if(b>=r)b=r-1;
+  const total=a*r+b;
+  if(Math.random()<.5){cur={type:'one',ans:[total],q:`${a} <span class="u">${B}</span>${b?` ${b} <span class="u">${s}</span>`:''} = ?`,units:[s]}}
+  else{cur={type:'two',ans:[a,b],q:`${total} <span class="u">${s}</span> = ?`,units:[B,s]}}
+}
+function renderConvert(msg=''){
+  const g=$('#game');
+  g.innerHTML=head('almashtir','Birliklarni almashtiring')+`<div class="q">${cur.q}</div>
+  <form id="f" class="row">${cur.units.map((u,i)=>`<input type="number" inputmode="numeric" id="in${i}" aria-label="${u}" required><span class="unit">${u}</span>`).join('')}
+  <button class="btn" type="submit">Tekshirish</button><button class="btn ghost" type="button" id="skip">Keyingisi</button></form>
+  <div class="msg ${msg.cls||''}" role="status">${msg.t||''}</div><p class="hint">Katta birlikdan kichigiga — ko‘paytiring; kichigidan kattasiga — bo‘ling.</p>`;
+  $('#in0').focus();
+  $('#f').addEventListener('submit',e=>{e.preventDefault();
+    const v=cur.units.map((u,i)=>Number($('#in'+i).value));
+    const ok=v.every((x,i)=>x===cur.ans[i]);
+    hit('almashtir',ok);
+    const right=cur.ans.map((x,i)=>x+' '+cur.units[i]).join(' ');
+    newConvert();renderConvert(ok?{cls:'ok',t:'To‘g‘ri! Yangi savol.'}:{cls:'bad',t:`Javob: ${right}. Yangi savol.`});
+  });
+  $('#skip').addEventListener('click',()=>{newConvert();renderConvert()});
+}
+
+/* render a length (in sm) in a random form */
+function show(v){
+  const f=pick(['sm','msm','dmsm','mm']);
+  if(f==='mm')return `${v*10} mm`;
+  if(f==='msm'&&v>=100)return `${Math.floor(v/100)} m${v%100?' '+v%100+' sm':''}`;
+  if(f==='dmsm'&&v>=10)return `${Math.floor(v/10)} dm${v%10?' '+v%10+' sm':''}`;
+  return `${v} sm`;
+}
+
+/* 2. Taqqosla */
+let cmp=null;
+function newCompare(){
+  const a=R(40,480);const kind=pick(['eq','eq','lt','gt']);
+  const d=pick([1,2,5,9,10,20,45,90]);
+  let b=kind==='eq'?a:kind==='lt'?a+d:Math.max(1,a-d);
+  let sa=show(a),sb=show(b);let guard=0;while(sa===sb&&guard++<10)sb=show(b);
+  cmp={a,b,sa,sb,ans:a<b?'<':a>b?'>':'='};
+}
+function renderCompare(msg=''){
+  $('#game').innerHTML=head('taqqosla','Taqqoslang: >, < yoki =')+`<div class="cmp"><div class="v">${cmp.sa}</div>
+  <div class="mid">${['>','=','<'].map(s=>`<button class="btn" data-s="${s}" aria-label="${s==='>'?'katta':s==='<'?'kichik':'teng'}">${s.replace('<','&lt;').replace('>','&gt;')}</button>`).join('')}</div>
+  <div class="v">${cmp.sb}</div></div><div class="msg ${msg.cls||''}" role="status">${msg.t||''}</div>
+  <p class="hint">Ikkala uzunlikni bir xil birlikka keltiring, so‘ng solishtiring.</p>`;
+  document.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+    const ok=b.dataset.s===cmp.ans;hit('taqqosla',ok);
+    const t=`${cmp.sa} = ${cmp.a} sm, ${cmp.sb} = ${cmp.b} sm`;
+    newCompare();renderCompare(ok?{cls:'ok',t:'To‘g‘ri! '+t.replace(/</g,'&lt;')}:{cls:'bad',t:'Xato. '+t});
+  }));
+}
+
+/* 3. Zinapoya */
+let st=null;
+function newStairs(){
+  const base=R(80,400),set=new Set();while(set.size<5)set.add(base+R(-12,12)*pick([1,1,5]));
+  const vals=[...set].filter(v=>v>0);while(vals.length<5)vals.push(base+vals.length*7);
+  const items=vals.map(v=>({v,s:show(v)}));
+  st={items:shuffle(items),order:[...vals].sort((x,y)=>x-y),pos:0,err:0};
+}
+function renderStairs(msg=''){
+  $('#game').innerHTML=head('zinapoya','Eng qisqasidan eng uzunigacha bosing')+`<div class="cards">${st.items.map((it,i)=>{
+    const done=st.order.indexOf(it.v)<st.pos;return `<button class="card" data-i="${i}" ${done?'disabled':''}>${done?`<span class="n">${st.order.indexOf(it.v)+1}</span>`:''}${it.s}</button>`}).join('')}</div>
+  <div class="msg ${msg.cls||''}" role="status">${msg.t||''}</div><div class="row"><button class="btn ghost" id="again">Yangi to‘plam</button></div>`;
+  document.querySelectorAll('.card:not([disabled])').forEach(b=>b.addEventListener('click',()=>{
+    const it=st.items[+b.dataset.i];
+    if(it.v===st.order[st.pos]){st.pos++;
+      if(st.pos===5){const ok=st.err===0;hit('zinapoya',ok);const t=ok?'Ajoyib! Xatosiz tartibladingiz.':`Tugadi, ${st.err} ta xato bilan.`;newStairs();renderStairs({cls:ok?'ok':'bad',t:t+' Yangi to‘plam.'});return}
+      renderStairs({cls:'ok',t:`${it.s} = ${it.v} sm — to‘g‘ri.`});
+    }else{st.err++;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');
+      const m=document.querySelector('.msg');m.className='msg bad';m.textContent=`${it.s} = ${it.v} sm. Undan qisqaroq uzunlik bor.`}
+  }));
+  $('#again').addEventListener('click',()=>{newStairs();renderStairs()});
+}
+
+/* 4. Teng bo‘l */
+let dv=null;
+function newDiv(){const n=R(2,6),len=n*R(2,4);dv={n,len,pts:[],checked:false}}
+const X0=50,X1=950,Y=95;
+function renderDiv(msg=''){
+  $('#game').innerHTML=head('bol',`AB kesmani ${dv.n} ta teng bo‘lakka bo‘ling`)+`
+  <p class="hint">AB = ${dv.len} sm. Kesma ustiga bosib ${dv.n-1} ta nuqta qo‘ying; nuqtani olib tashlash uchun uni yana bosing.</p>
+  <div class="fig"><svg id="seg" viewBox="0 0 1000 170" role="img" aria-label="AB kesma"></svg></div>
+  <div class="row"><button class="btn" id="chk">Tekshirish</button><button class="btn ghost" id="nx">Yangi kesma</button></div>
+  <div class="msg ${msg.cls||''}" role="status">${msg.t||''}</div>`;
+  drawSeg();
+  const svg=$('#seg');
+  svg.addEventListener('pointerdown',e=>{
+    if(dv.checked)return;const r=svg.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width*1000;if(x<X0-10||x>X1+10)return;
+    const near=dv.pts.findIndex(p=>Math.abs(p-x)<18);
+    if(near>=0)dv.pts.splice(near,1);else if(dv.pts.length<dv.n-1)dv.pts.push(Math.min(X1,Math.max(X0,x)));
+    drawSeg();
+  });
+  $('#chk').addEventListener('click',()=>{
+    if(dv.checked)return;
+    if(dv.pts.length!==dv.n-1){const m=document.querySelector('.msg');m.className='msg bad';m.textContent=`Yana ${dv.n-1-dv.pts.length} ta nuqta qo‘ying.`;return}
+    dv.checked=true;const p=[...dv.pts].sort((a,b)=>a-b),step=(X1-X0)/dv.n;
+    const errs=p.map((x,i)=>Math.abs(x-(X0+step*(i+1)))/(X1-X0)*dv.len*10);
+    const mx=Math.max(...errs),ok=mx<=3;hit('bol',ok);drawSeg();
+    const acc=Math.max(0,100-errs.reduce((a,b)=>a+b,0)/errs.length/(dv.len*10)*100*dv.n).toFixed(0);
+    const m=document.querySelector('.msg');m.className='msg '+(ok?'ok':'bad');
+    m.textContent=`Har bir bo‘lak ${(dv.len/dv.n).toString().replace('.',',')} sm bo‘lishi kerak. Eng katta xatolik: ${mx.toFixed(1).replace('.',',')} mm. Aniqlik: ${acc}%. ${ok?'Zo‘r!':'Xatolik 3 mm dan oshmasligi kerak.'}`;
+  });
+  $('#nx').addEventListener('click',()=>{newDiv();renderDiv()});
+}
+function drawSeg(){
+  const step=(X1-X0)/dv.n;let h=`<line x1="${X0}" x2="${X1}" y1="${Y}" y2="${Y}" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`;
+  for(let i=0;i<=dv.len;i++){const x=X0+(X1-X0)*i/dv.len;h+=`<line x1="${x}" x2="${x}" y1="${Y+14}" y2="${Y+(i%5===0?30:22)}" stroke="currentColor" stroke-width="1.5" opacity=".55"/>`}
+  if(dv.checked)for(let i=1;i<dv.n;i++){const x=X0+step*i;h+=`<line x1="${x}" x2="${x}" y1="${Y-34}" y2="${Y+8}" stroke="var(--ok)" stroke-width="3" stroke-dasharray="5 4"/>`}
+  dv.pts.forEach(x=>{h+=`<circle cx="${x}" cy="${Y}" r="11" fill="var(--red)" stroke="var(--card)" stroke-width="3"/>`});
+  h+=`<circle cx="${X0}" cy="${Y}" r="8" fill="currentColor"/><circle cx="${X1}" cy="${Y}" r="8" fill="currentColor"/>
+  <text x="${X0}" y="${Y-22}" text-anchor="middle" font-size="26" font-weight="800" fill="currentColor">A</text>
+  <text x="${X1}" y="${Y-22}" text-anchor="middle" font-size="26" font-weight="800" fill="currentColor">B</text>
+  <text x="500" y="160" text-anchor="middle" font-size="18" fill="currentColor" opacity=".7">har bir kichik chiziq — 1 sm</text>`;
+  $('#seg').innerHTML=h;
+}
+
+/* routing */
+const RENDER={almashtir:()=>{if(!cur)newConvert();renderConvert()},taqqosla:()=>{if(!cmp)newCompare();renderCompare()},zinapoya:()=>{if(!st)newStairs();renderStairs()},bol:()=>{if(!dv)newDiv();renderDiv()}};
+function go(){const g=(location.hash||'').slice(1);const k=RENDER[g]?g:'almashtir';
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.g===k));RENDER[k]()}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{if(location.hash==='#'+b.dataset.g)go();else location.hash=b.dataset.g}));
+window.addEventListener('hashchange',go);
+/* Telegram Mini App */
+const T0=Date.now();
+const tg=window.Telegram&&window.Telegram.WebApp;
+const inTg=!!(tg&&tg.initData);
+const total=()=>Object.values(S).reduce((a,s)=>a+s.n,0);
+function payload(){const g={};for(const k in S)g[k]=[S[k].ok,S[k].n];return JSON.stringify({v:1,g,t:Math.round((Date.now()-T0)/1000)})}
+function doSend(){
+  if(!inTg)return;
+  if(total()===0){$('#tgtext').textContent='Avval kamida bitta savolga javob bering.';return}
+  const fire=()=>{try{tg.sendData(payload())}catch(e){$('#tgtext').textContent='Yuborib bo‘lmadi: o‘yinni botdagi «O‘yinni boshlash» tugmasi orqali oching.'}};
+  if(tg.showConfirm)tg.showConfirm('Natijangiz o‘qituvchiga yuboriladi va o‘yin yopiladi. Davom etasizmi?',ok=>{if(ok)fire()});else fire();
+}
+if(inTg){
+  tg.ready();tg.expand();
+  if(tg.colorScheme)document.documentElement.dataset.theme=tg.colorScheme;
+  $('#send').addEventListener('click',doSend);
+  if(tg.MainButton){tg.MainButton.setText('Natijani yuborish');tg.MainButton.onClick(doSend)}
+  const upd=()=>{if(tg.MainButton&&total()>0)tg.MainButton.show()};
+  document.addEventListener('click',()=>setTimeout(upd,50));
+}else{
+  $('#tgbar').hidden=true;
+  $('#foot').textContent='Savollar har safar tasodifiy tuziladi. Natijani yuborish uchun o‘yinni Telegram botdagi «O‘yinni boshlash» tugmasi orqali oching.';
+}
+drawScore();go();
+}
+</script>
+</body>
+</html>
