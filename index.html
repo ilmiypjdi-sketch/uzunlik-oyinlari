@@ -245,15 +245,16 @@ window.addEventListener('hashchange',go);
 const T0=Date.now();
 const tg=window.Telegram&&window.Telegram.WebApp;
 const inTg=!!(tg&&typeof tg.sendData==='function');
+const canSend=!!(tg&&typeof tg.sendData==='function');
 const total=()=>Object.values(S).reduce((a,s)=>a+s.n,0);
 function payload(){const g={};for(const k in S)g[k]=[S[k].ok,S[k].n];return JSON.stringify({v:1,g,t:Math.round((Date.now()-T0)/1000)})}
 function doSend(){
-  if(!inTg)return;
+  if(!canSend){$('#tgtext').textContent='O‘yinni Telegram botdagi «O‘yinni boshlash» tugmasi orqali oching.';return}
   if(total()===0){$('#tgtext').textContent='Avval kamida bitta savolga javob bering.';return}
   const fire=()=>{try{tg.sendData(payload())}catch(e){$('#tgtext').textContent='Yuborib bo‘lmadi: o‘yinni botdagi «O‘yinni boshlash» tugmasi orqali oching.'}};
   if(tg.showConfirm)tg.showConfirm('Natijangiz o‘qituvchiga yuboriladi va o‘yin yopiladi. Davom etasizmi?',ok=>{if(ok)fire()});else fire();
 }
-if(inTg){
+if(canSend){
   tg.ready();tg.expand();
   if(tg.colorScheme)document.documentElement.dataset.theme=tg.colorScheme;
   $('#send').addEventListener('click',doSend);
@@ -261,8 +262,8 @@ if(inTg){
   const upd=()=>{if(tg.MainButton&&total()>0)tg.MainButton.show()};
   document.addEventListener('click',()=>setTimeout(upd,50));
 }else{
-  $('#tgbar').hidden=true;
-  $('#foot').textContent='Savollar har safar tasodifiy tuziladi. Natijani yuborish uchun o‘yinni Telegram botdagi «O‘yinni boshlash» tugmasi orqali oching.';
+  $('#send').addEventListener('click',doSend);
+  $('#foot').textContent='Telegram botdagi «O‘yinni boshlash» tugmasi orqali oching.';
 }
 drawScore();go();
 }
