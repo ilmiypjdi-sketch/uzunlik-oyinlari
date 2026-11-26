@@ -80,6 +80,7 @@ input[type=number]{font:700 22px Rubik,sans-serif;width:9ch;min-height:52px;padd
 <button role="tab" id="t-taqqosla" data-g="taqqosla">Taqqosla</button>
 <button role="tab" id="t-zinapoya" data-g="zinapoya">Zinapoya</button>
 <button role="tab" id="t-bol" data-g="bol">Teng bo‘l</button>
+<button role="tab" id="t-test" data-g="test">Kesma va birliklar testi</button>
 </div>
 <div id="game"></div>
 </div>
@@ -96,9 +97,9 @@ const $=s=>document.querySelector(s);
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=R(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
-const NAMES={almashtir:'Almashtir',taqqosla:'Taqqosla',zinapoya:'Zinapoya',bol:'Teng bo‘l'};
+const NAMES={almashtir:'Almashtir',taqqosla:'Taqqosla',zinapoya:'Zinapoya',bol:'Teng bo‘l',test:'Kesma va birliklar testi'};
 let best={};try{best=JSON.parse(localStorage.getItem('uz-best')||'{}')}catch(e){best={}}
-const S={almashtir:{ok:0,n:0,streak:0},taqqosla:{ok:0,n:0,streak:0},zinapoya:{ok:0,n:0,streak:0},bol:{ok:0,n:0,streak:0}};
+const S={almashtir:{ok:0,n:0,streak:0},taqqosla:{ok:0,n:0,streak:0},zinapoya:{ok:0,n:0,streak:0},bol:{ok:0,n:0,streak:0},test:{ok:0,n:0,streak:0}};
 function saveBest(g,v){if(!best[g]||v>best[g]){best[g]=v;try{localStorage.setItem('uz-best',JSON.stringify(best))}catch(e){}}}
 function drawScore(){$('#score').innerHTML=Object.keys(S).map(g=>`<div><span>${NAMES[g]}</span><b>${S[g].ok}/${S[g].n}</b><span>eng uzun seriya: ${best[g]||0}</span></div>`).join('')}
 function hit(g,ok){const s=S[g];s.n++;if(ok){s.ok++;s.streak++;saveBest(g,s.streak)}else s.streak=0;drawScore()}
@@ -235,8 +236,34 @@ function drawSeg(){
   $('#seg').innerHTML=h;
 }
 
+/* 5. Kesma va birliklar testi */
+const TESTS=[
+  {q:'1 metr nechta santimetrga teng?',o:['10 sm','100 sm','1000 sm','1 sm'],a:1},
+  {q:'1 santimetr nechta millimetrga teng?',o:['10 mm','100 mm','1000 mm','1 mm'],a:0},
+  {q:'1 kilometr nechta metrga teng?',o:['10 m','100 m','1000 m','10 000 m'],a:2},
+  {q:'AB kesma uzunligi 8 sm bo‘lsa, 2 ta teng bo‘lakning har biri?',o:['2 sm','4 sm','6 sm','8 sm'],a:1},
+  {q:'Eng kichik o‘lchov birligi qaysi?',o:['m','dm','sm','mm'],a:3},
+  {q:'2 m 30 sm = nechta sm?',o:['230 sm','203 sm','33 sm','300 sm'],a:0},
+  {q:'500 sm = nechta metr?',o:['5 m','50 m','500 m','0,5 m'],a:0},
+  {q:'Kesma qanday belgilardan iborat?',o:['A va B','faqat son','doira','toq'],a:0},
+  {q:'3 dm  = nechta sm?',o:['3 sm','30 sm','300 sm','3000 sm'],a:1},
+  {q:'Kesmani teng bo‘laklarga bo‘lish uchun qaysi nuqtalar kerak?',o:['Ixtiyoriy nuqtalar','Teng masofadagi nuqtalar','Faqat uch nuqta','Ko‘rinmaydigan nuqtalar'],a:1}
+];
+let testState=null;
+function newTest(){testState={index:0,done:false}}
+function renderTest(msg=''){
+  if(!testState)newTest();
+  const item=TESTS[testState.index];
+  if(testState.done){$('#game').innerHTML=head('test','Kesma va birliklar testi')+`<div class="q">Test tugadi</div><div class="msg ok">Natijangiz: ${S.test.ok}/${S.test.n}</div><div class="row"><button class="btn" id="testAgain">Testni qayta boshlash</button></div>`;$('#testAgain').onclick=()=>{S.test.ok=0;S.test.n=0;S.test.streak=0;newTest();renderTest();drawScore()};return}
+  $('#game').innerHTML=head('test','Kesma va birliklar testi')+`<div class="q">${testState.index+1}/${TESTS.length}. ${item.q}</div><div class="row">${item.o.map((text,i)=>`<button class="btn" data-test-answer="${i}">${text}</button>`).join('')}</div><div class="msg ${msg.cls||''}" role="status">${msg.t||''}</div>`;
+  document.querySelectorAll('[data-test-answer]').forEach(button=>button.onclick=()=>{
+    const chosen=Number(button.dataset.testAnswer);const ok=chosen===item.a;hit('test',ok);
+    if(testState.index===TESTS.length-1){testState.done=true;renderTest()}else{testState.index++;renderTest({cls:ok?'ok':'bad',t:ok?'To‘g‘ri!':'Xato. To‘g‘ri javob: '+item.o[item.a]})}
+  });
+}
+
 /* routing */
-const RENDER={almashtir:()=>{if(!cur)newConvert();renderConvert()},taqqosla:()=>{if(!cmp)newCompare();renderCompare()},zinapoya:()=>{if(!st)newStairs();renderStairs()},bol:()=>{if(!dv)newDiv();renderDiv()}};
+const RENDER={almashtir:()=>{if(!cur)newConvert();renderConvert()},taqqosla:()=>{if(!cmp)newCompare();renderCompare()},zinapoya:()=>{if(!st)newStairs();renderStairs()},bol:()=>{if(!dv)newDiv();renderDiv()},test:()=>renderTest()};
 function go(){const g=(location.hash||'').slice(1);const k=RENDER[g]?g:'almashtir';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.g===k));RENDER[k]()}
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{if(location.hash==='#'+b.dataset.g)go();else location.hash=b.dataset.g}));
